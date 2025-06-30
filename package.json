@@ -1,0 +1,21 @@
+{
+  "name": "file_sharer_p2p_distributed_systems",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000f\u0000i\u0000l\u0000e\u0000_\u0000s\u0000h\u0000a\u0000r\u0000e\u0000r\u0000_\u0000p\u00002\u0000p\u0000_\u0000d\u0000i\u0000s\u0000t\u0000r\u0000i\u0000b\u0000u\u0000t\u0000e\u0000d\u0000_\u0000s\u0000y\u0000s\u0000t\u0000e\u0000m\u0000s\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dxxiogo/file_sharer_p2p_distributed_systems.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dxxiogo/file_sharer_p2p_distributed_systems/issues"
+  },
+  "homepage": "https://github.com/dxxiogo/file_sharer_p2p_distributed_systems#readme"
+}
