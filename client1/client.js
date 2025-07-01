@@ -8,7 +8,6 @@ const SERVER_PORT = 1234;
 const FILE_PORT = 1235;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Lê arquivos da pasta /public
 function getPublicFiles() {
   if (!fs.existsSync(PUBLIC_DIR)) return [];
   return fs.readdirSync(PUBLIC_DIR).map(filename => {
@@ -18,7 +17,6 @@ function getPublicFiles() {
   });
 }
 
-// Conecta-se ao servidor e envia arquivos públicos
 function connectToServer(ip) {
   const client = new net.Socket();
 
@@ -45,7 +43,6 @@ function connectToServer(ip) {
   return client;
 }
 
-// Interface de linha de comando para interagir
 function promptUser(client) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -75,7 +72,6 @@ function promptUser(client) {
   ask();
 }
 
-// Cliente servidor P2P escutando porta 1235 para enviar arquivos
 function startFileServer() {
   const server = net.createServer((socket) => {
     socket.on('data', (data) => {
@@ -98,7 +94,6 @@ function startFileServer() {
   });
 }
 
-// Baixa um arquivo de outro cliente
 function downloadFile(filename, ip) {
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
@@ -122,7 +117,6 @@ function downloadFile(filename, ip) {
   });
 }
 
-// Início do programa
 function main() {
   const ip = '172.28.0.11';
   startFileServer();

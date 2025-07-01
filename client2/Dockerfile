@@ -6,4 +6,5 @@ COPY . .
 
 RUN npm install
 
-CMD ["node", "client.js"]
+CMD ["tail", "-f", "/dev/null"]
+# CMD ["node", "client.js"]
