@@ -4,7 +4,7 @@ const PORT = 1234;
 const allFiles = {};
 
 const server = net.createServer((socket) => {
-  const ip = socket.remoteAddress.replace(/^.*:/, ''); // remove "::ffff:" se for IPv6 mapeado
+  const ip = socket.remoteAddress.replace(/^.*:/, ''); 
   console.log(`[+] Nova conexão de ${ip}`);
 
   socket.on('data', (data) => {

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   server:
     build:
@@ -13,21 +15,21 @@ services:
     build:
       context: ./client1
     container_name: p2p-client1
-    depends_on:
-      - server
     networks:
       p2pnet:
         ipv4_address: 172.28.0.11
+    volumes:
+      - ./client1/public:/app/public
 
   client2:
     build:
       context: ./client2
     container_name: p2p-client2
-    depends_on:
-      - server
     networks:
       p2pnet:
         ipv4_address: 172.28.0.12
+    volumes:
+      - ./client2/public:/app/public
 
 networks:
   p2pnet:

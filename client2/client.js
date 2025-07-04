@@ -2,13 +2,16 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const chokidar = require('chokidar');
 
 const SERVER_HOST = 'server';
 const SERVER_PORT = 1234;
 const FILE_PORT = 1235;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Lê arquivos da pasta /public
+
+let serverSocket;
+
 function getPublicFiles() {
   if (!fs.existsSync(PUBLIC_DIR)) return [];
   return fs.readdirSync(PUBLIC_DIR).map(filename => {
@@ -18,56 +21,63 @@ function getPublicFiles() {
   });
 }
 
-// Conecta-se ao servidor e envia arquivos públicos
 function connectToServer(ip) {
   const client = new net.Socket();
 
   client.connect(SERVER_PORT, SERVER_HOST, () => {
-    console.log('[+] Conectado ao servidor');
+    console.log('[+] Connected to server');
     client.write(`JOIN ${ip}\n`);
-
-    const files = getPublicFiles();
-    files.forEach(file => {
-      client.write(`CREATEFILE ${file.filename} ${file.size}\n`);
-    });
-
-    promptUser(client);
   });
 
   client.on('data', (data) => {
-    console.log('[Servidor] > ' + data.toString());
+    const message = data.toString().trim();
+    console.log('[Server] > ' + message);
+
+    if (message.startsWith('CONFIRMJOIN')) {
+      getPublicFiles().forEach(file => {
+        client.write(`CREATEFILE ${file.filename} ${file.size}\n`);
+      });
+      watchFiles(client);
+
+      promptUser(client);
+    }
   });
 
   client.on('close', () => {
-    console.log('[*] Conexão encerrada com o servidor.');
+    console.log('[*] Disconnected from server.');
   });
 
-  return client;
+  serverSocket = client;
 }
 
-// Interface de linha de comando para interagir
+
 function promptUser(client) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
 
-  function ask() {
-    rl.question('Comando (search/download/leave): ', async (cmd) => {
+  async function ask() {
+    rl.question('Command (search/download/leave): ', async (cmd) => {
       if (cmd.startsWith('search')) {
         const pattern = cmd.split(' ')[1];
         client.write(`SEARCH ${pattern}\n`);
       } else if (cmd.startsWith('download')) {
-        const [, filename, ip] = cmd.split(' ');
-        await downloadFile(filename, ip);
+        const [, filename, targetIP] = cmd.split(' ');
+        if (filename && targetIP) {
+          await downloadFile(filename, targetIP);
+        } else {
+          console.log('[!] Usage: download <filename> <ip>');
+        }
       } else if (cmd === 'leave') {
         client.write('LEAVE\n');
         client.end();
         rl.close();
         process.exit(0);
       } else {
-        console.log('Comando inválido.');
+        console.log('[!] Invalid command.');
       }
+
       ask();
     });
   }
@@ -75,7 +85,28 @@ function promptUser(client) {
   ask();
 }
 
-// Cliente servidor P2P escutando porta 1235 para enviar arquivos
+function watchFiles(client) {
+  if (!fs.existsSync(PUBLIC_DIR)) return;
+
+  const watcher = chokidar.watch(PUBLIC_DIR, {
+    ignoreInitial: true,
+    persistent: true
+  });
+
+  watcher
+    .on('add', (filepath) => {
+      const filename = path.basename(filepath);
+      const size = fs.statSync(filepath).size;
+      console.log(`[+] Detected new file: ${filename}`);
+      client.write(`CREATEFILE ${filename} ${size}\n`);
+    })
+    .on('unlink', (filepath) => {
+      const filename = path.basename(filepath);
+      console.log(`[-] Detected file deletion: ${filename}`);
+      client.write(`DELETEFILE ${filename}\n`);
+    });
+}
+
 function startFileServer() {
   const server = net.createServer((socket) => {
     socket.on('data', (data) => {
@@ -83,7 +114,7 @@ function startFileServer() {
       const offset = parseInt(startStr || 0);
       const filepath = path.join(PUBLIC_DIR, filename);
       if (!fs.existsSync(filepath)) {
-        console.log(`Arquivo não encontrado: ${filename}`);
+        console.log(`[!] File not found: ${filename}`);
         socket.end();
         return;
       }
@@ -94,11 +125,10 @@ function startFileServer() {
   });
 
   server.listen(FILE_PORT, () => {
-    console.log(`[*] File server rodando na porta ${FILE_PORT}`);
+    console.log(`[*] File server running on port ${FILE_PORT}`);
   });
 }
 
-// Baixa um arquivo de outro cliente
 function downloadFile(filename, ip) {
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
@@ -110,19 +140,18 @@ function downloadFile(filename, ip) {
 
       socket.pipe(fileStream);
       socket.on('end', () => {
-        console.log(`[↓] Download completo: ${filename}`);
+        console.log(`[↓] Download complete: ${filename}`);
         resolve();
       });
     });
 
     socket.on('error', (err) => {
-      console.error(`[!] Erro ao baixar: ${err.message}`);
+      console.error(`[!] Download error: ${err.message}`);
       reject(err);
     });
   });
 }
 
-// Início do programa
 function main() {
   const ip = '172.28.0.12';
   startFileServer();
